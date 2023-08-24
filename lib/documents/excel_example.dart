@@ -74,18 +74,8 @@ class ItemInfo {
 }
 
 final itemInfoList = [
-  ItemInfo(
-      order: '1',
-      itemID: 'ITEM1',
-      itemCode: '001',
-      itemName: 'ITEM1',
-      deleteNotice: 'แจ้ง'),
-  ItemInfo(
-      order: '2',
-      itemID: 'ITEM2',
-      itemCode: '002',
-      itemName: 'ITEM2',
-      deleteNotice: 'แจ้ง'),
+  ItemInfo(order: '1', itemID: 'ITEM1', itemCode: '001', itemName: 'ITEM1', deleteNotice: 'แจ้ง'),
+  ItemInfo(order: '2', itemID: 'ITEM2', itemCode: '002', itemName: 'ITEM2', deleteNotice: 'แจ้ง'),
   ItemInfo(itemID: 'ITEM3', itemName: 'ITEM3'),
   ItemInfo(itemID: 'ITEM4', itemName: 'ITEM5'),
   ItemInfo(itemID: 'ITEM6', itemName: 'ITEM6'),
@@ -139,29 +129,13 @@ final shopPartsPrice = {
       "K": 5000.0,
       "R": 0.0,
     },
-
-    "ITEM3": {
+    "ITEM2": {
       "M": 1200.0,
       "T": null,
       "K": null,
       "R": null,
     },
   },
-  "SHOP05": {
-    "ITEM1": {
-      "M": 2500.0,
-      "T": null,
-      "K": 5000.0,
-      "R": 0.0,
-    },
-
-    "ITEM3": {
-      "M": 1200.0,
-      "T": null,
-      "K": null,
-      "R": null,
-    },
-  }
 };
 
 final partsType = ['M', 'T', 'K', 'R'];
@@ -172,10 +146,7 @@ void exportExcel() {
   var sheet = excel['Example'];
   excel.delete('Sheet1');
 
-  var cellStyle =
-      CellStyle(fontSize: 10, horizontalAlign: HorizontalAlign.Center);
-
-
+  var cellStyle = CellStyle(fontSize: 10, horizontalAlign: HorizontalAlign.Center);
 
   //------------------------ Shop
   // start at row 0 col 4 (E1)
@@ -242,12 +213,7 @@ void exportExcel() {
 
   // 1-∞ time
   for (var item in itemInfoList) {
-    List<dynamic> list = [
-      item.order,
-      item.itemCode,
-      item.itemName,
-      item.deleteNotice
-    ];
+    List<dynamic> list = [item.order, item.itemCode, item.itemName, item.deleteNotice];
     var itemID = item.itemID;
     // 5 time
     for (var shop in shops) {
@@ -271,26 +237,31 @@ void exportExcel() {
     ..value = 'ราคารวมอะไหล่แต่ละประเภท'
     ..cellStyle = cellStyle;
 
+  Map<String?, Map<String, double?>> sumResult = {};
+  Map<String, double?> emptyResult = {'M': 0.0, 'T': 0.0, 'K': 0.0, 'R': 0.0};
 
-  Map<String?, Map<String, double>> sumResult = {};
+  for (var shop in shops) {
+    if (shop == null) {
+      sumResult.addAll({null: emptyResult});
+      continue;
+    }
 
-  for(var shop in shops){
-    if(shop == null){
-      sumResult.addAll({null: {}});
-    }else{
-      final shopID = shop.shopID;
-      sumResult[shopID] = {};
+    final shopID = shop.shopID;
 
-      final items = shopPartsPrice[shopID];
-      final itemKeys = items!.keys.toList();
+    if (!shopPartsPrice.containsKey(shopID)) {
+      sumResult[shopID] = emptyResult;
+      continue;
+    }
 
-      for (final key in partsType) {
-        final values = itemKeys
-            .map((item) => items[item]?[key] ?? 0)
-            .toList();
+    sumResult[shopID] = {};
 
-        sumResult[shopID]![key] = values.reduce((a, b) => a + b);
-      }
+    final items = shopPartsPrice[shopID];
+    final itemKeys = items!.keys.toList();
+
+    for (final key in partsType) {
+      final values = itemKeys.map((item) => items[item]?[key] ?? 0).toList();
+
+      sumResult[shopID]![key] = values.reduce((a, b) => a + b);
     }
   }
   print(sumResult);
@@ -299,20 +270,12 @@ void exportExcel() {
   int colSumIndex = 4;
 
   sumResult.forEach((shop, costs) {
-    if(shop == null){
-      colSumIndex += 4;
-      return;
+    for (var cost in costs.values) {
+      sheet.cell(CellIndex.indexByColumnRow(rowIndex: rowSumIndex, columnIndex: colSumIndex++))
+        ..value = cost
+        ..cellStyle = CellStyle(fontSize: 10);
     }
-
-    for(var cost in costs.values){
-      sheet.cell(CellIndex.indexByColumnRow(
-                  rowIndex: rowSumIndex, columnIndex: colSumIndex++))
-                ..value = cost
-                ..cellStyle = CellStyle(fontSize: 10);
-            }
   });
-
-
 
   excel.save(fileName: 'test.xlsx');
 }
