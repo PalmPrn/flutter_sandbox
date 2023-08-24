@@ -136,11 +136,20 @@ final shopPartsPrice = {
       "R": null,
     },
   },
+  "SHOP05": {
+    "ITEM1": {
+      "M": 2500.0,
+      "T": null,
+      "K": 5000.0,
+      "R": 0.0,
+    },
+  },
 };
 
 final partsType = ['M', 'T', 'K', 'R'];
 
 void exportExcel() {
+  Stopwatch stopwatch = Stopwatch()..start();
   var excel = Excel.createExcel();
 
   var sheet = excel['Example'];
@@ -211,6 +220,24 @@ void exportExcel() {
 
   //------------------------ Data
 
+  //test mass data
+  // List.generate(5000, (index) {
+  //   final item = itemInfoList[0];
+  //   List<dynamic> list = [item.order, item.itemCode, item.itemName, item.deleteNotice];
+  //   var itemID = item.itemID;
+  //   for (var shop in shops) {
+  //     var shopID = shop?.shopID;
+  //
+  //     // 4 time
+  //     for (var type in partsType) {
+  //       var cost = shopPartsPrice[shopID]?[itemID]?[type];
+  //
+  //       list.add(cost);
+  //     }
+  //   }
+  //   sheet.appendRow(list);
+  // });
+
   // 1-∞ time
   for (var item in itemInfoList) {
     List<dynamic> list = [item.order, item.itemCode, item.itemName, item.deleteNotice];
@@ -222,6 +249,7 @@ void exportExcel() {
       // 4 time
       for (var type in partsType) {
         var cost = shopPartsPrice[shopID]?[itemID]?[type];
+
         list.add(cost);
       }
     }
@@ -241,6 +269,7 @@ void exportExcel() {
   Map<String, double?> emptyResult = {'M': 0.0, 'T': 0.0, 'K': 0.0, 'R': 0.0};
 
   for (var shop in shops) {
+    //check shop null -> skip
     if (shop == null) {
       sumResult.addAll({null: emptyResult});
       continue;
@@ -248,6 +277,7 @@ void exportExcel() {
 
     final shopID = shop.shopID;
 
+    //check item null -> skip
     if (!shopPartsPrice.containsKey(shopID)) {
       sumResult[shopID] = emptyResult;
       continue;
@@ -264,7 +294,6 @@ void exportExcel() {
       sumResult[shopID]![key] = values.reduce((a, b) => a + b);
     }
   }
-  print(sumResult);
 
   //plot excel
   int colSumIndex = 4;
@@ -278,6 +307,7 @@ void exportExcel() {
   });
 
   excel.save(fileName: 'test.xlsx');
+  print('appending executed in ${stopwatch.elapsed}');
 }
 
 class ExcelExample extends StatelessWidget {
