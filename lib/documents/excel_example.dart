@@ -131,6 +131,36 @@ final shopPartsPrice = {
       "K": null,
       "R": null,
     },
+  },
+  "SHOP04": {
+    "ITEM1": {
+      "M": 2500.0,
+      "T": null,
+      "K": 5000.0,
+      "R": 0.0,
+    },
+
+    "ITEM3": {
+      "M": 1200.0,
+      "T": null,
+      "K": null,
+      "R": null,
+    },
+  },
+  "SHOP05": {
+    "ITEM1": {
+      "M": 2500.0,
+      "T": null,
+      "K": 5000.0,
+      "R": 0.0,
+    },
+
+    "ITEM3": {
+      "M": 1200.0,
+      "T": null,
+      "K": null,
+      "R": null,
+    },
   }
 };
 
@@ -144,6 +174,8 @@ void exportExcel() {
 
   var cellStyle =
       CellStyle(fontSize: 10, horizontalAlign: HorizontalAlign.Center);
+
+
 
   //------------------------ Shop
   // start at row 0 col 4 (E1)
@@ -206,9 +238,8 @@ void exportExcel() {
     }
   });
 
-  Map<String?, Map<String?, double?>> mapBook = {};
-
   //------------------------ Data
+
   // 1-∞ time
   for (var item in itemInfoList) {
     List<dynamic> list = [
@@ -222,25 +253,10 @@ void exportExcel() {
     for (var shop in shops) {
       var shopID = shop?.shopID;
 
-      //open book bank
-      if (!mapBook.containsKey(shopID)) {
-        mapBook[shopID] = {};
-      }
-
       // 4 time
       for (var type in partsType) {
         var cost = shopPartsPrice[shopID]?[itemID]?[type];
         list.add(cost);
-
-        //deposit
-        if (mapBook[shopID]!.containsKey(type)) {
-          mapBook[shopID]?[type] = mapBook[shopID]![type]! + (cost ?? 0);
-        } else {
-          mapBook[shopID]![type] = (cost ?? 0);
-        }
-        // if (cost != null && cost != 0) {
-        //
-        // }
       }
     }
     sheet.appendRow(list);
@@ -255,26 +271,48 @@ void exportExcel() {
     ..value = 'ราคารวมอะไหล่แต่ละประเภท'
     ..cellStyle = cellStyle;
 
-  // start at col 4 (E?)
+
+  Map<String?, Map<String, double>> sumResult = {};
+
+  for(var shop in shops){
+    if(shop == null){
+      sumResult.addAll({null: {}});
+    }else{
+      final shopID = shop.shopID;
+      sumResult[shopID] = {};
+
+      final items = shopPartsPrice[shopID];
+      final itemKeys = items!.keys.toList();
+
+      for (final key in partsType) {
+        final values = itemKeys
+            .map((item) => items[item]?[key] ?? 0)
+            .toList();
+
+        sumResult[shopID]![key] = values.reduce((a, b) => a + b);
+      }
+    }
+  }
+  print(sumResult);
+
+  //plot excel
   int colSumIndex = 4;
 
-  // 5 time
-  mapBook.forEach((shop, cost) {
-    // shop is null -> skip
-    if (shop == null) {
+  sumResult.forEach((shop, costs) {
+    if(shop == null){
       colSumIndex += 4;
       return;
     }
 
-    // 4 time
-    for (var cost in cost.values) {
+    for(var cost in costs.values){
       sheet.cell(CellIndex.indexByColumnRow(
-          rowIndex: rowSumIndex, columnIndex: colSumIndex++))
-        ..value = cost
-        ..cellStyle = CellStyle(fontSize: 10);
-    }
+                  rowIndex: rowSumIndex, columnIndex: colSumIndex++))
+                ..value = cost
+                ..cellStyle = CellStyle(fontSize: 10);
+            }
   });
-  // print('mapBook => $mapBook');
+
+
 
   excel.save(fileName: 'test.xlsx');
 }
